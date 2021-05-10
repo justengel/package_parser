@@ -211,7 +211,7 @@ def parse_meta(filename):
     except (ImportError, Exception):
         pass  # Failed to import and execute the code
 
-    if len(meta) == 0:
+    if not meta.get('name', None) and 'version' not in meta:
         raise ValueError('Invalid __meta__.py file given! Could not load the meta info.')
     return meta
 
@@ -261,7 +261,7 @@ def parse_setup(filename):
         if cwd is not None:
             os.chdir(cwd)
 
-    if len(meta) == 0:
+    if not meta.get('name', None) and 'version' not in meta:
         raise ValueError('Invalid setup.py file given! Could not get the keyword arguments from the setup function.')
 
     return meta
@@ -296,6 +296,9 @@ def parse_module(module):
         meta['plat'] = try_attrs(module, '__plat__')
     except (AttributeError, Exception):
         pass
+
+    if not meta.get('name', None) and 'version' not in meta:
+        raise ValueError('Invalid module given! Cannot find a name and version')
     return meta
 
 
