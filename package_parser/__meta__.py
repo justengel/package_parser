@@ -1,0 +1,6 @@
+name = 'package_parser'
+version = '1.0.0'
+description = 'Python utility to parse package filenames to get the name and version of the package.'
+url = 'https://github.com/justengel/package_parser'
+author = 'Justin Engel'
+author_email = 'jtengel08@gmail.com'
