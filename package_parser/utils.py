@@ -205,8 +205,10 @@ def parse_custom(filename):
     return attrs
 
 
-def parse_meta(filename):
+def parse_meta(filename, required_vars=None):
     """Return the metadata dictionary from the given filename. I started using a __meta__.py file in my projects."""
+    if required_vars is None:
+        required_vars = ['name', 'version', 'description', 'url', 'author', 'author_email']
     if os.path.isdir(filename):
         filename = os.path.join(filename, '__meta__.py')
 
@@ -219,8 +221,8 @@ def parse_meta(filename):
     except (ImportError, Exception):
         pass  # Failed to import and execute the code
 
-    if not meta.get('name', None) and 'version' not in meta:
-        raise ValueError('Invalid __meta__.py file given! Could not load the meta info.')
+    if any(k not in meta for k in required_vars):
+        raise ValueError('Invalid __meta__.py file given! Missing some required meta information!')
     return meta
 
 
@@ -269,7 +271,7 @@ def parse_setup(filename):
         if cwd is not None:
             os.chdir(cwd)
 
-    if not meta.get('name', None) and 'version' not in meta:
+    if not meta.get('name', None) or 'version' not in meta:
         raise ValueError('Invalid setup.py file given! Could not get the keyword arguments from the setup function.')
 
     return meta
