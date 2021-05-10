@@ -9,9 +9,17 @@ from packaging.version import Version, InvalidVersion
 
 __all__ = [
     'parse',
-    'is_compatible', 'get_compatibility_tags', 'get_supported', 'SUPPORTED',
+    'normalize_name', 'is_compatible', 'get_compatibility_tags', 'get_supported', 'SUPPORTED',
     'parse_wheel_filename', 'parse_sdist_filename', 'parse_custom', 'parse_meta', 'parse_setup', 'parse_module',
     'remove_possible_md5', 'try_attrs']
+
+
+_CONVERT_UNDERSCORE = re.compile("[^\w]+")
+
+
+def normalize_name(name):
+    """Normalize the name by replacing '-' and other invalid characters with a '_'."""
+    return _CONVERT_UNDERSCORE.sub('_', str(name))
 
 
 def get_supported():
