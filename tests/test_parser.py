@@ -7,7 +7,7 @@ def test_name_version_wheel():
     filename = 'dynamicmethod-1.0.3-py3-none-any.whl'
     attrs = parse(filename)
     assert attrs['name'] == 'dynamicmethod', '{} != {}'.format(attrs['name'], 'dynamicmethod')
-    assert attrs['version'] == '1.0.3', '{} != {}'.format(attrs['version'], '1.0.3')
+    assert attrs['version'] == '1.0.3', '{!r} != {!r}'.format(attrs['version'], '1.0.3')
 
     filename = 'dynamicmethod-1.0.3-cp36-cp36m-any.whl'
     attrs = parse(filename)
@@ -40,7 +40,7 @@ def test_name_version_py():
     filename = 'custom.py'
     attrs = parse(filename)
     assert attrs['name'] == 'custom', '{} != {}'.format(attrs['name'], 'custom')
-    assert attrs['version'] == '0.0.0', '{} != {}'.format(attrs['version'], '0.0.0')
+    assert attrs['version'] == '', '{} != {}'.format(attrs['version'], '')
 
 
 def test_name_version_setup_py():
@@ -60,15 +60,15 @@ def test_name_version_setup_py():
 
 
     filename = '../setup.py'  # Local setup.py
-    name, version = parse(filename)
-    assert name == __meta__.name, '{} != {}'.format(name, __meta__.name)
-    assert version == __meta__.version, '{} != {}'.format(version, __meta__.version)
+    attrs = parse(filename)
+    assert attrs['name'] == __meta__.name, '{} != {}'.format(attrs['name'], __meta__.name)
+    assert attrs['version'] == __meta__.version, '{} != {}'.format(attrs['version'], __meta__.version)
 
 
 def test_name_version_meta():
     import os
     from package_parser import parse_meta
-    from pylibimport import __meta__
+    from package_parser import __meta__
 
     filename = '../setup.py'  # Local setup.py
     name, version = None, None
@@ -77,7 +77,7 @@ def test_name_version_meta():
     filename = os.path.dirname(filename)
     for fname in os.listdir(filename):
         try:
-            meta = get_meta(os.path.join(filename, fname, '__meta__.py'))
+            meta = parse_meta(os.path.join(filename, fname, '__meta__.py'))
             name, version = meta['name'], meta['version']
             break
         except (FileNotFoundError, PermissionError, TypeError, KeyError, Exception):

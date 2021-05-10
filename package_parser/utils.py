@@ -108,12 +108,12 @@ def parse_wheel_filename(filename):
         # Check if name contains version
         if '.' in name:
             raise ValueError  # name contains name and version while version is build?
-        version = Version(version)
+        ver = Version(version)
     except (InvalidVersion, ValueError, Exception):
         try:
             build = version
             name, version = name.rsplit('-', 1)
-            version = Version(version)  # If this fails it is just invalid
+            ver = Version(version)  # If this fails it is just invalid
         except (InvalidVersion, ValueError, Exception) as err:
             raise ValueError('Invalid version string "{}"!'.format(version)) from err
 
@@ -122,7 +122,7 @@ def parse_wheel_filename(filename):
         raise ValueError("Invalid project name: {}".format(filename))
 
     name = canonicalize_name(name)
-    return {'name': name, 'version': version, 'build': build, 'pyver': pyver, 'abi': abi, 'plat': plat}
+    return {'name': name, 'version': str(version), 'build': build, 'pyver': pyver, 'abi': abi, 'plat': plat}
 
 
 def parse_sdist_filename(filename):
@@ -145,8 +145,8 @@ def parse_sdist_filename(filename):
     # We are requiring a PEP 440 version, which cannot contain dashes, so we split on the last dash.
     name, version = filename.rsplit('-', 1)
     name = canonicalize_name(name)
-    version = Version(version)
-    return {'name': name, 'version': version}
+    # version = Version(version)
+    return {'name': name, 'version': str(version)}
 
 
 def parse_custom(filename):
@@ -222,34 +222,44 @@ def parse_setup(filename):
         filename = os.path.join(filename, 'setup.py')
     elif not filename.lower().endswith('setup.py'):
         raise ValueError('Invalid setup.py filename given!')
+    basename = os.path.basename(filename)
 
     # Meta dictionary for setup keyword arguments
     meta = {}
+    cwd = None
+    orig_setup = None
 
     try:
-        # First import setuptools
+        # Change current directory
+        cwd = os.getcwd()
+        os.chdir(os.path.abspath(os.path.dirname(filename)))
+
+         # First import setuptools
         from setuptools import setup as orig_setup
 
         # Replace the setuptools "setup" function with custom function
         def my_setup(**attrs):
             meta.update(attrs)
 
+        # Change setup and Save current dir
         sys.modules['setuptools'].setup = my_setup
 
-        # Save current dir
-        cwd = os.getcwd()
+        try:
+            # Compile and execute the setup.py file with the setuptools "setup" function already replaced
+            with open(basename, 'r') as f:
+                code = compile(f.read(), '<string>', 'exec')
+                exec(code, {'__name__': '__main__', '__file__': os.path.abspath(basename)})
+        except (ImportError, Exception):
+            pass  # Failed to import and execute the code
 
-        # Compile and execute the setup.py file with the setuptools "setup" function already replaced
-        with open(filename, 'r') as f:
-            os.chdir(os.path.abspath(os.path.dirname(filename)))
-            code = compile(f.read(), '<string>', 'exec')
-            exec(code, {'__name__': '__main__', '__file__': os.path.abspath(filename)})
-
-        # Revert to proper directory and proper setuptools "setup" function
-        os.chdir(cwd)
-        sys.modules['setuptools'].setup = orig_setup
     except (ImportError, Exception):
-        pass  # Failed to import and execute the code
+        pass  # Failed to import setuptools or invalid setup.py path
+    finally:
+        # Revert to proper directory and proper setuptools "setup" function
+        if orig_setup is not None:
+            sys.modules['setuptools'].setup = orig_setup
+        if cwd is not None:
+            os.chdir(cwd)
 
     if len(meta) == 0:
         raise ValueError('Invalid setup.py file given! Could not get the keyword arguments from the setup function.')
